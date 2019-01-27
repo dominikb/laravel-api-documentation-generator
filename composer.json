@@ -1,0 +1,32 @@
+{
+  "name": "dominikb/laravel-api-documentation-generator",
+  "description": "Simple package that extracts information from Laravel API routes to generate documentation.",
+  "keywords": [
+    "Laravel",
+    "API",
+    "Documentation",
+    "Generator"
+  ],
+  "homepage": "https://github.com/dominikb/laravel-api-documentation-generator",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Dominik Bauernfeind",
+      "email": "bauernfeind.dominik@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.2",
+    "illuminate/config": "5.7.*",
+    "illuminate/support": "5.7.*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "7.5.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Dominikb\\LaravelApiDocumentationGenerator\\": "src/"
+    }
+  },
+  "minimum-stability": "dev"
+}
