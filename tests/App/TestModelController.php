@@ -8,6 +8,7 @@
 
 namespace Dominikb\LaravelApiDocumentationGenerator\Tests\App;
 
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Response;
 
@@ -24,5 +25,20 @@ class TestModelController
     public function show(TestModel $model)
     {
         return Response::json($model);
+    }
+
+    public function actionWithoutTypeHint($uuid)
+    {
+
+    }
+
+    public function actionWithMultipleTypeHints(TestModel $model, string $uuid)
+    {
+
+    }
+
+    public function actionWithRequestTypeHint(Request $req, TestModel $model)
+    {
+
     }
 }

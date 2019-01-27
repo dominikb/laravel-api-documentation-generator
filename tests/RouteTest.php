@@ -8,7 +8,10 @@
 
 namespace Dominikb\LaravelApiDocumentationGenerator\Tests;
 
+use Dominikb\LaravelApiDocumentationGenerator\Exceptions\ParameterNotFoundException;
 use Dominikb\LaravelApiDocumentationGenerator\Route;
+use Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModel;
+use Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModelController;
 
 class RouteTest
     extends TestCase {
@@ -16,21 +19,75 @@ class RouteTest
     private function makeRoute($params = [])
     {
         $routeParams = array_merge([
-            'methods' => ['GET'],
-            'endpoint' => 'api/test-model',
+            'methods'    => ['GET'],
+            'endpoint'   => 'api/test-models/{model}',
             'middleware' => ['api'],
-            'controller' => 'App\Http\Controller\TestModelController',
-            'action' => 'index',
+            'controller' => TestModelController::class,
+            'action'     => 'show',
         ], $params);
 
         return new Route(...array_values($routeParams));
     }
 
     /** @test */
-    public function it_can_extract_parameter_names_from_the_endpoint()
+    public function it_extracts_parameter_names_from_the_endpoint()
     {
         $route = $this->makeRoute(['endpoint' => 'api/{id}/{id2}']);
 
         $this->assertEquals(['id', 'id2'], $route->getParameters());
+        $this->assertCount(2, $route->getParameters());
+    }
+
+    /** @test */
+    public function given_a_parameter_it_can_resolve_its_type()
+    {
+        $route = $this->makeRoute();
+
+        $this->assertEquals(TestModel::class, $route->getParameterType('model'));
+    }
+
+    /** @test */
+    public function given_a_non_existing_parameter_an_exception_gets_thrown()
+    {
+        $this->expectException(ParameterNotFoundException::class);
+
+        $this->makeRoute()->getParameterType('invalid parameter');
+    }
+
+    /** @test */
+    public function it_returns_null_for_parameters_without_a_type()
+    {
+        $route = $this->makeRoute([
+            'endpoint' => '/action/{uuid}',
+            'action' => 'actionWithoutTypeHint',
+        ]);
+
+        $this->assertNull($route->getParameterType('uuid'));
+    }
+
+    /** @test */
+    public function it_also_returns_the_parameter_type_if_the_request_object_is_type_hinted()
+    {
+        $route = $this->makeRoute([
+            'action' => 'actionWithRequestTypeHint',
+        ]);
+
+        $this->assertEquals(TestModel::class, $route->getParameterType('model'));
+    }
+
+    /** @test */
+    public function it_retrieves_types_for_multiple_parameters()
+    {
+        $route = $this->makeRoute([
+            'endpoint' => '/api/test-models/{model}/{uuid}',
+            'action' => 'actionWithMultipleTypeHints',
+        ]);
+
+        $shouldReceive = [
+            'model' => TestModel::class,
+            'uuid'  => 'string',
+        ];
+
+        $this->assertEquals($shouldReceive, $route->getParameterTypes());
     }
 }

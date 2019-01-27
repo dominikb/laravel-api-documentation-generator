@@ -8,6 +8,10 @@
 
 namespace Dominikb\LaravelApiDocumentationGenerator;
 
+use Dominikb\LaravelApiDocumentationGenerator\Exceptions\ParameterNotFoundException;
+use ReflectionClass;
+use ReflectionParameter;
+
 class Route {
 
     /** @var string[]|string */
@@ -47,6 +51,34 @@ class Route {
         }, $parameters[0]);
 
         return $trimmed;
+    }
+
+    public function getParameterTypes(): array
+    {
+        return collect($this->getParameters())
+            ->mapWithKeys(function (string $parameter) {
+                return [$parameter => $this->getParameterType($parameter)];
+            })
+            ->toArray();
+    }
+
+    public function getParameterType(string $parameterName): ?string
+    {
+        throw_if(! in_array($parameterName, $this->getParameters()), new ParameterNotFoundException);
+
+        $reflector = new ReflectionClass($this->controller);
+
+        $parameters = $reflector->getMethod($this->action)->getParameters();
+
+        /** @var ReflectionParameter $parameter */
+        $parameter = collect($parameters)
+            ->first(function (ReflectionParameter $parameter) use ($parameterName) {
+                return $parameter->getName() === $parameterName;
+            });
+
+        throw_if(!$parameter instanceof ReflectionParameter, new ParameterNotFoundException);
+
+        return ($type = $parameter->getType()) ? $type->getName() : null;
     }
 
     /**
