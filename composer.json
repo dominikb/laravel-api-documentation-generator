@@ -21,11 +21,13 @@
     "illuminate/support": "5.7.*"
   },
   "require-dev": {
-    "phpunit/phpunit": "7.5.*"
+    "phpunit/phpunit": "7.5.*",
+    "orchestra/testbench": "~3.0"
   },
   "autoload": {
     "psr-4": {
-      "Dominikb\\LaravelApiDocumentationGenerator\\": "src/"
+      "Dominikb\\LaravelApiDocumentationGenerator\\": "src/",
+      "Dominikb\\LaravelApiDocumentationGenerator\\Tests\\": "tests/"
     }
   },
   "minimum-stability": "dev"
