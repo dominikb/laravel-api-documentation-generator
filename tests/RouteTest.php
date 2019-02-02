@@ -90,4 +90,26 @@ class RouteTest
 
         $this->assertEquals($shouldReceive, $route->getParameterTypes());
     }
+
+    /** @test */
+    public function it_implements_a_to_string_method()
+    {
+        $route = $this->makeRoute([
+            'methods'    => ['GET', 'OPTION'],
+            'endpoint'   => 'api/test-model/{model}',
+            'middleware' => ['api'],
+            'controller' => TestModelController::class,
+            'action'     => 'show',
+        ]);
+
+        $expectedFormat = <<<DOC
+[GET|OPTION] api/test-model/{model}
+Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModelController@show
+Middleware:
+- 'api'
+Parameters:
+- model <> 'Primary Key [id] of Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModel'
+DOC;
+        $this->assertEquals($expectedFormat, $route->__toString());
+    }
 }

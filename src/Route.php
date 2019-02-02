@@ -9,10 +9,13 @@
 namespace Dominikb\LaravelApiDocumentationGenerator;
 
 use Dominikb\LaravelApiDocumentationGenerator\Exceptions\ParameterNotFoundException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use ReflectionClass;
 use ReflectionParameter;
 
-class Route {
+class Route
+{
 
     /** @var string[]|string */
     private $methods;
@@ -29,14 +32,27 @@ class Route {
     /** @var string */
     private $action;
 
-    public function __construct(array $methods, string $endpoint, array $middleware, string $controller,
-                                string $action)
-    {
+    public function __construct(
+        array $methods,
+        string $endpoint,
+        array $middleware,
+        string $controller,
+        string $action
+    ) {
         $this->methods = $methods;
         $this->endpoint = $endpoint;
         $this->middleware = $middleware;
         $this->controller = $controller;
         $this->action = $action;
+    }
+
+    public function getParameterTypes(): array
+    {
+        return collect($this->getParameters())
+            ->mapWithKeys(function (string $parameter) {
+                return [$parameter => $this->getParameterType($parameter)];
+            })
+            ->toArray();
     }
 
     public function getParameters(): array
@@ -53,15 +69,6 @@ class Route {
         return $trimmed;
     }
 
-    public function getParameterTypes(): array
-    {
-        return collect($this->getParameters())
-            ->mapWithKeys(function (string $parameter) {
-                return [$parameter => $this->getParameterType($parameter)];
-            })
-            ->toArray();
-    }
-
     public function getParameterType(string $parameterName): ?string
     {
         throw_if(! in_array($parameterName, $this->getParameters()), new ParameterNotFoundException);
@@ -76,7 +83,7 @@ class Route {
                 return $parameter->getName() === $parameterName;
             });
 
-        throw_if(!$parameter instanceof ReflectionParameter, new ParameterNotFoundException);
+        throw_if(! $parameter instanceof ReflectionParameter, new ParameterNotFoundException);
 
         return ($type = $parameter->getType()) ? $type->getName() : null;
     }
@@ -121,4 +128,39 @@ class Route {
         return $this->action;
     }
 
+    public function __toString()
+    {
+        $methods = join('|', Arr::wrap($this->methods));
+
+        $output = "[$methods] $this->endpoint" . PHP_EOL;
+
+        $output .= "$this->controller@$this->action" . PHP_EOL;
+
+        $middleware = collect($this->middleware)
+            ->map(function ($middleware) {
+                return "- '$middleware'" . PHP_EOL;
+            })
+            ->implode(PHP_EOL);
+        $output .= "Middleware:" . PHP_EOL . $middleware;
+
+        $parameters = collect($this->getParameterTypes())
+            ->map(function ($type, $parameter) {
+                if (class_exists($type)) {
+                    $reflector = new ReflectionClass($type);
+
+                    /** @var Model $inst */
+                    $inst = $reflector->newInstance();
+
+                    $description = "Primary Key [{$inst->getKeyName()}] of $type";
+                } else {
+                    $description = $type;
+                }
+
+                return "- $parameter <> '$description'";
+            })
+            ->implode(PHP_EOL);
+        $output .= "Parameters:" . PHP_EOL . $parameters;
+
+        return $output;
+    }
 }
