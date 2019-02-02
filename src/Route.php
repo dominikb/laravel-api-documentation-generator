@@ -10,6 +10,8 @@ namespace Dominikb\LaravelApiDocumentationGenerator;
 
 use Dominikb\LaravelApiDocumentationGenerator\Exceptions\ParameterNotFoundException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use ReflectionClass;
 use ReflectionParameter;
@@ -48,14 +50,22 @@ class Route
 
     public function getParameterTypeMap(): array
     {
-        return collect($this->getParameters())
-            ->mapWithKeys(function (string $parameter) {
-                return [$parameter => $this->getParameter($parameter)->getType()];
+        $actionParameters = $this->getActionParameters();
+        $routeParameterNames = $this->getParameterNames();
+
+        if (array_first($actionParameters)->getClass()->newInstanceWithoutConstructor() instanceof Request) {
+            $routeParameterNames = Arr::prepend($routeParameterNames, 'request');
+        }
+
+        return collect($routeParameterNames)
+            ->zip($actionParameters)
+            ->mapWithKeys(function($tuple) {
+                return [$tuple[0] => RouteParameter::from($tuple[1])->getType()];
             })
             ->toArray();
     }
 
-    public function getParameters(): array
+    public function getParameterNames(): array
     {
         $pattern = "({[\w_]*})";
         $parameters = [];
@@ -71,16 +81,13 @@ class Route
 
     public function getParameter(string $parameterName): RouteParameter
     {
-        throw_if(! in_array($parameterName, $this->getParameters()), new ParameterNotFoundException);
+        throw_if(! in_array($parameterName, $this->getParameterNames()), new ParameterNotFoundException);
 
-        $reflector = new ReflectionClass($this->controller);
+        $parameter = $this->resolveParameterByName($parameterName);
 
-        $parameters = $reflector->getMethod($this->action)->getParameters();
-
-        $parameter = collect($parameters)
-            ->first(function (ReflectionParameter $parameter) use ($parameterName) {
-                return $parameter->getName() === $parameterName;
-            });
+        if ( ! $parameter) {
+            $parameter = $this->resolveParameterByOrder($parameterName);
+        }
 
         throw_if(! $parameter instanceof ReflectionParameter, new ParameterNotFoundException);
 
@@ -161,5 +168,65 @@ class Route
         $output .= "Parameters:" . PHP_EOL . $parameters;
 
         return $output;
+    }
+
+    /**
+     * @param string $parameterName
+     *
+     * @return ReflectionParameter|null
+     * @throws \ReflectionException
+     */
+    private function resolveParameterByName(string $parameterName): ?ReflectionParameter
+    {
+        $parameters = $this->getActionParameters();
+
+        $parameter = collect($parameters)
+            ->first(function (ReflectionParameter $parameter) use ($parameterName) {
+                return $parameter->getName() === $parameterName;
+            });
+
+        return $parameter;
+    }
+
+    private function resolveParameterByOrder(string $parameterName)
+    {
+        $parameterNames = $this->getParameterNames();
+        $reflectionParameters = $this->getActionParameters();
+
+        $parameter = collect($parameterNames)
+            ->zip($reflectionParameters)
+            ->mapWithKeys(function ($tuple) {
+                return [$tuple[0] => $tuple[1]];
+            })
+            ->get($parameterName);
+
+        return $parameter;
+    }
+
+    /**
+     * @return ReflectionParameter[]
+     * @throws \ReflectionException
+     */
+    private function getActionParameters()
+    {
+        $reflector = new ReflectionClass($this->controller);
+
+        $parameters = $reflector->getMethod($this->action)->getParameters();
+
+        $parameters = collect($parameters)
+            ->reject(function (ReflectionParameter $parameter) {
+                // Keep built-in types
+                if ( ! $class = $parameter->getClass()) {
+                    return;
+                }
+
+                $parameter = $class->newInstanceWithoutConstructor();
+
+                // Filter type-hints of BaseRequest class
+                return $parameter instanceof Request && ! $parameter instanceof FormRequest;
+            })
+            ->toArray();
+
+        return $parameters;
     }
 }

@@ -27,6 +27,13 @@ class TestModelController
         return Response::json($model);
     }
 
+    public function update(ChangeTestModelNameRequest $req, TestModel $model)
+    {
+        $model->update($req->only('name'));
+
+        return Response::json($model);
+    }
+
     public function actionWithoutTypeHint($uuid)
     {
 
@@ -38,6 +45,11 @@ class TestModelController
     }
 
     public function actionWithRequestTypeHint(Request $req, TestModel $model)
+    {
+
+    }
+
+    public function orderedTypes(Request $request, TestModel $model)
     {
 
     }

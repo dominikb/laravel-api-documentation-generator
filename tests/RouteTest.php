@@ -10,6 +10,7 @@ namespace Dominikb\LaravelApiDocumentationGenerator\Tests;
 
 use Dominikb\LaravelApiDocumentationGenerator\Exceptions\ParameterNotFoundException;
 use Dominikb\LaravelApiDocumentationGenerator\Route;
+use Dominikb\LaravelApiDocumentationGenerator\Tests\App\ChangeTestModelNameRequest;
 use Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModel;
 use Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModelController;
 
@@ -34,8 +35,8 @@ class RouteTest
     {
         $route = $this->makeRoute(['endpoint' => 'api/{id}/{id2}']);
 
-        $this->assertEquals(['id', 'id2'], $route->getParameters());
-        $this->assertCount(2, $route->getParameters());
+        $this->assertEquals(['id', 'id2'], $route->getParameterNames());
+        $this->assertCount(2, $route->getParameterNames());
     }
 
     /** @test */
@@ -52,6 +53,19 @@ class RouteTest
         $this->expectException(ParameterNotFoundException::class);
 
         $this->makeRoute()->getParameter('invalid parameter');
+    }
+
+    /** @test */
+    public function given_a_route_when_a_parameters_does_not_match_by_name_it_assigns_them_by_order()
+    {
+        $route = $this->makeRoute([
+            'endpoint' => '/test-model/{id}',
+            'action'   => 'orderedTypes',
+        ]);
+
+        $this->assertEquals([
+            'id' => TestModel::class,
+        ], $route->getParameterTypeMap());
     }
 
     /** @test */
@@ -111,5 +125,32 @@ Parameters:
 - model <> 'Primary Key [id] of Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModel'
 DOC;
         $this->assertEquals($expectedFormat, $route->__toString());
+    }
+
+    /** @test */
+    public function it_strips_the_injection_of_a_non_form_request_from_its_parameters()
+    {
+        $route = $this->makeRoute([
+            'action' => 'actionWithRequestTypeHint',
+        ]);
+
+        $this->assertEquals(['model' => TestModel::class], $route->getParameterTypeMap());
+    }
+
+    /** @test */
+    public function it_keeps_form_request_objects()
+    {
+        factory(TestModel::class)->create();
+
+        $route = $this->makeRoute([
+            'action'   => 'update',
+            'endpoint' => 'api/test-model/{id}',
+        ]);
+
+        $typeMap = [
+            'request' => ChangeTestModelNameRequest::class,
+            'id'   => TestModel::class,
+        ];
+        $this->assertEquals($typeMap, $route->getParameterTypeMap());
     }
 }

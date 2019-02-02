@@ -8,6 +8,9 @@
 
 namespace Dominikb\LaravelApiDocumentationGenerator\Tests;
 
+use Illuminate\Database\DatabaseManager;
+use Illuminate\Database\Schema\Blueprint;
+
 class TestCase
     extends \Orchestra\Testbench\TestCase {
 
@@ -15,11 +18,16 @@ class TestCase
     {
         parent::setUp();
 
-        $this->setUpDumpServer();
+        /** @var DatabaseManager $db */
+        $db = $this->app['db'];
+
+        $db->connection()->getSchemaBuilder()->create('test_models', function (Blueprint $table) {
+            $table->increments('id');
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        $this->withFactories(__DIR__.'/factories');
     }
 
-    private function setUpDumpServer()
-    {
-
-    }
 }
