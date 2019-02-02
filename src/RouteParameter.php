@@ -10,10 +10,10 @@ namespace Dominikb\LaravelApiDocumentationGenerator;
 
 use ReflectionParameter;
 
-class RouteParameter {
-
+class RouteParameter
+{
     /** @var ReflectionParameter */
-    protected $parameter;
+    private $parameter;
 
     public static function from(ReflectionParameter $parameter): RouteParameter
     {

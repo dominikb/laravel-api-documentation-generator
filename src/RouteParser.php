@@ -78,9 +78,7 @@ class RouteParser {
 
         $length = $sections->count();
 
-        $controllerAndAction = explode('@', $sections->get($length - 2));
-        $controller = array_first($controllerAndAction);
-        $action = count($controllerAndAction) === 2 ? array_last($controllerAndAction) : '__invoke';
+        [$controller, $action] = Str::parseCallback($sections->get($length - 2));
 
         $middleware = explode(',', $sections->get($length - 1));
         $endpoint = $sections->get($length - 4);

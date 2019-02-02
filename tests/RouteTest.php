@@ -43,7 +43,7 @@ class RouteTest
     {
         $route = $this->makeRoute();
 
-        $this->assertEquals(TestModel::class, $route->getParameterType('model'));
+        $this->assertEquals(TestModel::class, $route->getParameter('model')->getType());
     }
 
     /** @test */
@@ -51,7 +51,7 @@ class RouteTest
     {
         $this->expectException(ParameterNotFoundException::class);
 
-        $this->makeRoute()->getParameterType('invalid parameter');
+        $this->makeRoute()->getParameter('invalid parameter');
     }
 
     /** @test */
@@ -62,7 +62,7 @@ class RouteTest
             'action' => 'actionWithoutTypeHint',
         ]);
 
-        $this->assertNull($route->getParameterType('uuid'));
+        $this->assertNull($route->getParameter('uuid')->getType());
     }
 
     /** @test */
@@ -72,7 +72,7 @@ class RouteTest
             'action' => 'actionWithRequestTypeHint',
         ]);
 
-        $this->assertEquals(TestModel::class, $route->getParameterType('model'));
+        $this->assertEquals(TestModel::class, $route->getParameter('model')->getType());
     }
 
     /** @test */
@@ -88,7 +88,7 @@ class RouteTest
             'uuid'  => 'string',
         ];
 
-        $this->assertEquals($shouldReceive, $route->getParameterTypes());
+        $this->assertEquals($shouldReceive, $route->getParameterTypeMap());
     }
 
     /** @test */

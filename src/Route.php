@@ -46,11 +46,11 @@ class Route
         $this->action = $action;
     }
 
-    public function getParameterTypes(): array
+    public function getParameterTypeMap(): array
     {
         return collect($this->getParameters())
             ->mapWithKeys(function (string $parameter) {
-                return [$parameter => $this->getParameterType($parameter)];
+                return [$parameter => $this->getParameter($parameter)->getType()];
             })
             ->toArray();
     }
@@ -69,7 +69,7 @@ class Route
         return $trimmed;
     }
 
-    public function getParameterType(string $parameterName): ?string
+    public function getParameter(string $parameterName): RouteParameter
     {
         throw_if(! in_array($parameterName, $this->getParameters()), new ParameterNotFoundException);
 
@@ -77,7 +77,6 @@ class Route
 
         $parameters = $reflector->getMethod($this->action)->getParameters();
 
-        /** @var ReflectionParameter $parameter */
         $parameter = collect($parameters)
             ->first(function (ReflectionParameter $parameter) use ($parameterName) {
                 return $parameter->getName() === $parameterName;
@@ -85,7 +84,7 @@ class Route
 
         throw_if(! $parameter instanceof ReflectionParameter, new ParameterNotFoundException);
 
-        return ($type = $parameter->getType()) ? $type->getName() : null;
+        return RouteParameter::from($parameter);
     }
 
     /**
@@ -143,7 +142,7 @@ class Route
             ->implode(PHP_EOL);
         $output .= "Middleware:" . PHP_EOL . $middleware;
 
-        $parameters = collect($this->getParameterTypes())
+        $parameters = collect($this->getParameterTypeMap())
             ->map(function ($type, $parameter) {
                 if (class_exists($type)) {
                     $reflector = new ReflectionClass($type);
