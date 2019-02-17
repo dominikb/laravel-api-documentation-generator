@@ -1,8 +1,11 @@
 <?php namespace Dominikb\LaravelApiDocumentationGenerator;
 
+use Dominikb\LaravelApiDocumentationGenerator\Commands\GenerateCommand;
+use Dominikb\LaravelApiDocumentationGenerator\Contracts\RouteFormatter;
 use Illuminate\Support\ServiceProvider as LaravelServiceProvider;
 
-class ServiceProvider extends LaravelServiceProvider {
+class ServiceProvider extends LaravelServiceProvider
+{
 
     /**
      * Indicates if loading of the provider is deferred.
@@ -16,13 +19,32 @@ class ServiceProvider extends LaravelServiceProvider {
      *
      * @return void
      */
-    public function boot() {
-
+    public function boot()
+    {
         $this->handleConfigs();
+        $this->handleCommands();
         // $this->handleMigrations();
         // $this->handleViews();
         // $this->handleTranslations();
         // $this->handleRoutes();
+    }
+
+    private function handleConfigs()
+    {
+        $configPath = __DIR__ . '/../config/laravel-api-documentation-generator.php';
+
+        $this->publishes([$configPath => config_path('laravel-api-documentation-generator.php')]);
+
+        $this->mergeConfigFrom($configPath, 'laravel-api-documentation-generator');
+    }
+
+    private function handleCommands()
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                GenerateCommand::class,
+            ]);
+        }
     }
 
     /**
@@ -30,10 +52,9 @@ class ServiceProvider extends LaravelServiceProvider {
      *
      * @return void
      */
-    public function register() {
-
-        // Bind any implementations.
-
+    public function register()
+    {
+        $this->app->instance(RouteFormatter::class, new TextFormatter);
     }
 
     /**
@@ -41,39 +62,32 @@ class ServiceProvider extends LaravelServiceProvider {
      *
      * @return array
      */
-    public function provides() {
-
-        return [];
+    public function provides()
+    {
+        return [RouteParser::class];
     }
 
-    private function handleConfigs() {
-
-        $configPath = __DIR__ . '/../config/packagename.php';
-
-        $this->publishes([$configPath => config_path('packagename.php')]);
-
-        $this->mergeConfigFrom($configPath, 'packagename');
+    private function handleTranslations()
+    {
+        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'laravel-api-documentation-generator');
     }
 
-    private function handleTranslations() {
+    private function handleViews()
+    {
+        $this->loadViewsFrom(__DIR__ . '/../views', 'laravel-api-documentation-generator');
 
-        $this->loadTranslationsFrom(__DIR__.'/../lang', 'packagename');
+        $this->publishes([
+            __DIR__ . '/../views' => base_path('resources/views/vendor/laravel-api-documentation-generator'),
+        ]);
     }
 
-    private function handleViews() {
-
-        $this->loadViewsFrom(__DIR__.'/../views', 'packagename');
-
-        $this->publishes([__DIR__.'/../views' => base_path('resources/views/vendor/packagename')]);
-    }
-
-    private function handleMigrations() {
-
+    private function handleMigrations()
+    {
         $this->publishes([__DIR__ . '/../migrations' => base_path('database/migrations')]);
     }
 
-    private function handleRoutes() {
-
-        include __DIR__.'/../routes.php';
+    private function handleRoutes()
+    {
+        include __DIR__ . '/../routes.php';
     }
 }

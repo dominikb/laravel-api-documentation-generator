@@ -14,7 +14,10 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use ReflectionClass;
+use ReflectionException;
 use ReflectionParameter;
+use Spatie\Regex\Regex;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 
 class Route
 {
@@ -53,7 +56,12 @@ class Route
         $actionParameters = $this->getActionParameters();
         $routeParameterNames = $this->getParameterNames();
 
-        if (array_first($actionParameters)->getClass()->newInstanceWithoutConstructor() instanceof Request) {
+        if (count($actionParameters) === 0) {
+            return [];
+        }
+
+        /** @var ReflectionClass $class */
+        if (($class = array_first($actionParameters)->getClass()) && $class->isSubclassOf(FormRequest::class)) {
             $routeParameterNames = Arr::prepend($routeParameterNames, 'request');
         }
 
@@ -151,7 +159,7 @@ class Route
 
         $parameters = collect($this->getParameterTypeMap())
             ->map(function ($type, $parameter) {
-                if (class_exists($type)) {
+                if (class_exists($type) && is_subclass_of($type, Model::class)) {
                     $reflector = new ReflectionClass($type);
 
                     /** @var Model $inst */
@@ -162,7 +170,7 @@ class Route
                     $description = $type;
                 }
 
-                return "- $parameter <> '$description'";
+                return "- $$parameter <> '$description'";
             })
             ->implode(PHP_EOL);
         $output .= "Parameters:" . PHP_EOL . $parameters;
@@ -205,28 +213,35 @@ class Route
 
     /**
      * @return ReflectionParameter[]
-     * @throws \ReflectionException
      */
     private function getActionParameters()
     {
-        $reflector = new ReflectionClass($this->controller);
+        $parameters = [];
 
-        $parameters = $reflector->getMethod($this->action)->getParameters();
+        try {
+            $reflector = new ReflectionClass($this->controller);
 
-        $parameters = collect($parameters)
-            ->reject(function (ReflectionParameter $parameter) {
-                // Keep built-in types
-                if ( ! $class = $parameter->getClass()) {
-                    return;
-                }
+            $parameters = $reflector->getMethod($this->action)->getParameters();
 
-                $parameter = $class->newInstanceWithoutConstructor();
+            $parameters = collect($parameters)
+                ->reject(function (ReflectionParameter $parameter) {
+                    // Keep built-in types
+                    if ( ! $class = $parameter->getClass()) {
+                        return;
+                    }
 
-                // Filter type-hints of BaseRequest class
-                return $parameter instanceof Request && ! $parameter instanceof FormRequest;
-            })
-            ->toArray();
+                    if (! $class->isInstantiable()) {
+                        return;
+                    }
 
-        return $parameters;
+                    // Filter type-hints of BaseRequest class
+                    return $parameter instanceof Request && ! $parameter instanceof FormRequest;
+                })
+                ->toArray();
+        } catch (ReflectionException $exception) {
+            dump($exception);
+        } finally {
+            return $parameters;
+        }
     }
 }

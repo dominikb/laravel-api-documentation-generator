@@ -8,18 +8,23 @@
 
 namespace Dominikb\LaravelApiDocumentationGenerator;
 
+use Dominikb\LaravelApiDocumentationGenerator\Contracts\RouteFormatter;
 use Dominikb\LaravelApiDocumentationGenerator\Exceptions\EmptyRoutesException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Spatie\Regex\Regex;
 
 class RouteParser {
+    /** @var RouteFormatter */
+    protected $formatter;
 
     /** @var RouteCollection */
     private $routes;
 
-    public function __construct()
+    public function __construct(RouteFormatter $formatter)
     {
         $this->routes = new RouteCollection;
+        $this->formatter = $formatter;
     }
 
     /**
@@ -50,9 +55,9 @@ class RouteParser {
         $lines = explode(PHP_EOL, $commandOutput);
 
         $routes = $this->stripFormattingAndWhitespace($lines)
-                       ->map(function (string $routeString) {
-                           return $this->routeFromString($routeString);
-                       });
+            ->map(function (string $routeString) {
+                return $this->routeFromString($routeString);
+            });
 
         $this->routes = $this->routes->merge($routes);
     }
@@ -73,7 +78,7 @@ class RouteParser {
     private function routeFromString(string $routeString): Route
     {
         $sections = collect(explode('|', $routeString))
-            ->filter()
+            ->slice(1, -1)
             ->values();
 
         $length = $sections->count();
@@ -82,8 +87,28 @@ class RouteParser {
 
         $middleware = explode(',', $sections->get($length - 1));
         $endpoint = $sections->get($length - 4);
-        $methods = $sections->slice(0, $length - 4)->toArray();
 
-        return new Route($methods, $endpoint, $middleware, $controller, $action);
+        $methods = $this->extractHttpMethods($routeString);
+
+        return new Route($methods, $endpoint, $middleware, $controller, $action ?? '__invoke');
+    }
+
+    public function format(): string
+    {
+        return $this->routes
+            ->map(function (Route $route) {
+                return $this->formatter->format($route);
+            })
+            ->implode(PHP_EOL);
+    }
+
+    private function extractHttpMethods(string $routeString): array
+    {
+        $httpMethods = "/(GET|HEAD|OPTIONS|PUT|PATCH|POST|DELETE)(?=\|{1})/";
+        $matches = Regex::matchAll($httpMethods, $routeString)
+            ->results();
+        $methods = collect($matches)->map->result()->all();
+
+        return $methods;
     }
 }
