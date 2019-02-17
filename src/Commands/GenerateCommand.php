@@ -4,15 +4,12 @@
 namespace Dominikb\LaravelApiDocumentationGenerator\Commands;
 
 
-use Dominikb\LaravelApiDocumentationGenerator\Route;
-use Dominikb\LaravelApiDocumentationGenerator\RouteParameter;
+use Dominikb\LaravelApiDocumentationGenerator\HtmlFormatter;
 use Dominikb\LaravelApiDocumentationGenerator\RouteParser;
 use Dominikb\LaravelApiDocumentationGenerator\TextFormatter;
 use Illuminate\Console\Command;
-use Illuminate\Contracts\Console\Application;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\File;
-use Symfony\Component\Console\Output\BufferedOutput;
 
 class GenerateCommand extends Command
 {
@@ -20,11 +17,9 @@ class GenerateCommand extends Command
 
     public function handle()
     {
-        Artisan::call('route:list');
-
-        $parser = app(RouteParser::class);
-
-        $collection = $parser->parse(Artisan::output());
+        /** @var Router $router */
+        $router = app(Router::class);
+        $parser = new RouteParser($router, new TextFormatter);
 
         $formatted = $parser->format();
 

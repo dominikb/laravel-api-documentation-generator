@@ -12,6 +12,7 @@ use Dominikb\LaravelApiDocumentationGenerator\Exceptions\EmptyRoutesException;
 use Dominikb\LaravelApiDocumentationGenerator\Route;
 use Dominikb\LaravelApiDocumentationGenerator\RouteCollection;
 use Dominikb\LaravelApiDocumentationGenerator\RouteParser;
+use Dominikb\LaravelApiDocumentationGenerator\TextFormatter;
 
 class RouteParserTest
     extends TestCase {
@@ -25,7 +26,7 @@ class RouteParserTest
     /** @before */
     public function setUpRouteParseInstance()
     {
-        $this->routeParser = new RouteParser;
+        $this->routeParser = new RouteParser(new TextFormatter);
     }
 
     /** @before */

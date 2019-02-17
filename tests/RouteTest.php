@@ -122,7 +122,7 @@ Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModelController@show
 Middleware:
 - 'api'
 Parameters:
-- model <> 'Primary Key [id] of Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModel'
+- \$model <> 'Primary Key [id] of Dominikb\LaravelApiDocumentationGenerator\Tests\App\TestModel'
 DOC;
         $this->assertEquals($expectedFormat, $route->__toString());
     }

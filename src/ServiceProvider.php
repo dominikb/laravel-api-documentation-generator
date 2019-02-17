@@ -1,7 +1,7 @@
 <?php namespace Dominikb\LaravelApiDocumentationGenerator;
 
 use Dominikb\LaravelApiDocumentationGenerator\Commands\GenerateCommand;
-use Dominikb\LaravelApiDocumentationGenerator\Contracts\RouteFormatter;
+use Dominikb\LaravelApiDocumentationGenerator\Contracts\Formatter;
 use Illuminate\Support\ServiceProvider as LaravelServiceProvider;
 
 class ServiceProvider extends LaravelServiceProvider
@@ -54,7 +54,7 @@ class ServiceProvider extends LaravelServiceProvider
      */
     public function register()
     {
-        $this->app->instance(RouteFormatter::class, new TextFormatter);
+        $this->app->instance(Formatter::class, new TextFormatter);
     }
 
     /**

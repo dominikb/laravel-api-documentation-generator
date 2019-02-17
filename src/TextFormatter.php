@@ -2,12 +2,12 @@
 
 namespace Dominikb\LaravelApiDocumentationGenerator;
 
-use Dominikb\LaravelApiDocumentationGenerator\Contracts\RouteFormatter;
+use Dominikb\LaravelApiDocumentationGenerator\Contracts\Formatter;
 
-class TextFormatter implements RouteFormatter
+class TextFormatter implements Formatter
 {
-    function format(Route $route): string
+    function format(RouteCollection $route): string
     {
-        return $route->__toString();
+        return $route->map->__toString()->implode(PHP_EOL);
     }
 }
