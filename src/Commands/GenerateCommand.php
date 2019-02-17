@@ -19,11 +19,11 @@ class GenerateCommand extends Command
     {
         /** @var Router $router */
         $router = app(Router::class);
-        $parser = new RouteParser($router, new TextFormatter);
+        $parser = new RouteParser($router, new HtmlFormatter);
 
         $formatted = $parser->format();
 
-        File::put(storage_path('documentation.txt'), $formatted);
+        File::put(storage_path('documentation.html'), $formatted);
 
         $this->info('Success!');
     }

@@ -45,7 +45,7 @@ class RouteParser {
         $mappedRoutes = array_map(function(\Illuminate\Routing\Route $route){
             return new Route(
                 $route->methods(),
-                $route->uri(),
+                $route->getDomain() . $route->getPrefix() . $route->uri(),
                 $route->middleware(),
                 get_class($route->getController()),
                 $route->getActionMethod()
